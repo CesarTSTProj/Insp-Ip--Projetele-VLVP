@@ -1,3 +1,20 @@
+/*
+=================================================
+CONFIGURAÇÕES DO SISTEMA
+=================================================
+*/
+
+const DB_NAME = 'INSP_IPE_PROJETELE';
+const DB_VERSION = 1;
+const STORE_NAME = 'inspecoes';
+
+
+/*
+=================================================
+ITENS DO CHECKLIST
+=================================================
+*/
+
 const itens = [
 
   ['documento',
@@ -45,6 +62,15 @@ const itens = [
 ];
 
 
+/*
+=================================================
+MATRIZ DE CRITICIDADE
+
+true  = impeditivo
+false = não impeditivo
+=================================================
+*/
+
 const matriz = {
 
   documento: true,
@@ -78,10 +104,14 @@ const matriz = {
 };
 
 
+/*
+=================================================
+CRIAR CHECKLIST NA TELA
+=================================================
+*/
+
 const checklist =
-  document.getElementById(
-    'checklist'
-  );
+  document.getElementById('checklist');
 
 
 itens.forEach(function(item) {
@@ -100,29 +130,22 @@ itens.forEach(function(item) {
     <div class="simnao">
 
       <label>
-
         <input
           type="radio"
           name="${item[0]}"
           value="SIM">
-
         SIM
-
       </label>
 
       <label>
-
         <input
           type="radio"
           name="${item[0]}"
           value="NÃO">
-
         NÃO
-
       </label>
 
     </div>
-
   `;
 
   checklist.appendChild(div);
@@ -130,23 +153,303 @@ itens.forEach(function(item) {
 });
 
 
-document.getElementById(
-  'data'
-).value =
-  new Date()
-    .toISOString()
-    .split('T')[0];
+/*
+=================================================
+DATA AUTOMÁTICA
+=================================================
+*/
 
+const hoje =
+  new Date();
+
+const ano =
+  hoje.getFullYear();
+
+const mes =
+  String(
+    hoje.getMonth() + 1
+  ).padStart(2, '0');
+
+const dia =
+  String(
+    hoje.getDate()
+  ).padStart(2, '0');
+
+
+document.getElementById('data').value =
+  `${ano}-${mes}-${dia}`;
+
+
+/*
+=================================================
+ABRIR INDEXEDDB
+=================================================
+*/
+
+function abrirBanco() {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const requisicao =
+        indexedDB.open(
+          DB_NAME,
+          DB_VERSION
+        );
+
+
+      requisicao.onupgradeneeded =
+        function(event) {
+
+          const db =
+            event.target.result;
+
+
+          if (
+            !db.objectStoreNames.contains(
+              STORE_NAME
+            )
+          ) {
+
+            const store =
+              db.createObjectStore(
+                STORE_NAME,
+                {
+                  keyPath: 'id'
+                }
+              );
+
+
+            store.createIndex(
+              'statusSync',
+              'statusSync',
+              {
+                unique: false
+              }
+            );
+
+
+            store.createIndex(
+              'timestampInspecao',
+              'timestampInspecao',
+              {
+                unique: false
+              }
+            );
+
+          }
+
+        };
+
+
+      requisicao.onsuccess =
+        function(event) {
+
+          resolve(
+            event.target.result
+          );
+
+        };
+
+
+      requisicao.onerror =
+        function(event) {
+
+          reject(
+            event.target.error
+          );
+
+        };
+
+    }
+  );
+
+}
+
+
+/*
+=================================================
+SALVAR INSPEÇÃO NO INDEXEDDB
+=================================================
+*/
+
+async function salvarInspecaoLocal(
+  dados
+) {
+
+  const db =
+    await abrirBanco();
+
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const transacao =
+        db.transaction(
+          STORE_NAME,
+          'readwrite'
+        );
+
+
+      const store =
+        transacao.objectStore(
+          STORE_NAME
+        );
+
+
+      const requisicao =
+        store.put(dados);
+
+
+      requisicao.onsuccess =
+        function() {
+
+          resolve(true);
+
+        };
+
+
+      requisicao.onerror =
+        function(event) {
+
+          reject(
+            event.target.error
+          );
+
+        };
+
+    }
+  );
+
+}
+
+
+/*
+=================================================
+LISTAR INSPEÇÕES PENDENTES
+=================================================
+*/
+
+async function obterInspecoesPendentes() {
+
+  const db =
+    await abrirBanco();
+
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const transacao =
+        db.transaction(
+          STORE_NAME,
+          'readonly'
+        );
+
+
+      const store =
+        transacao.objectStore(
+          STORE_NAME
+        );
+
+
+      const indice =
+        store.index(
+          'statusSync'
+        );
+
+
+      const requisicao =
+        indice.getAll(
+          'PENDENTE'
+        );
+
+
+      requisicao.onsuccess =
+        function() {
+
+          resolve(
+            requisicao.result || []
+          );
+
+        };
+
+
+      requisicao.onerror =
+        function(event) {
+
+          reject(
+            event.target.error
+          );
+
+        };
+
+    }
+  );
+
+}
+
+
+/*
+=================================================
+CONTADOR DE INSPEÇÕES PENDENTES
+=================================================
+*/
+
+async function atualizarContadorFila() {
+
+  try {
+
+    const pendentes =
+      await obterInspecoesPendentes();
+
+
+    const quantidade =
+      pendentes.length;
+
+
+    const texto =
+      quantidade === 1
+        ? '1 inspeção aguardando sincronização'
+        : quantidade +
+          ' inspeções aguardando sincronização';
+
+
+    document.getElementById(
+      'filaStatus'
+    ).innerText =
+      texto;
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao consultar IndexedDB:',
+      erro
+    );
+
+  }
+
+}
+
+
+/*
+=================================================
+STATUS ONLINE / OFFLINE
+=================================================
+*/
 
 function atualizarStatus() {
 
   const online =
     navigator.onLine;
 
+
   document.getElementById(
     'statusIcon'
   ).innerText =
-    online ? '🟢' : '🔴';
+    online
+      ? '🟢'
+      : '🔴';
+
 
   document.getElementById(
     'statusTexto'
@@ -155,12 +458,21 @@ function atualizarStatus() {
       ? 'ONLINE'
       : 'OFFLINE';
 
+
+  atualizarContadorFila();
+
 }
 
 
 window.addEventListener(
   'online',
-  atualizarStatus
+  function() {
+
+    atualizarStatus();
+
+    sincronizar();
+
+  }
 );
 
 
@@ -170,27 +482,220 @@ window.addEventListener(
 );
 
 
-atualizarStatus();
+/*
+=================================================
+GERAR ID ÚNICO
+=================================================
+*/
 
+function gerarId() {
+
+  const agora =
+    new Date();
+
+
+  const ano =
+    agora.getFullYear();
+
+
+  const mes =
+    String(
+      agora.getMonth() + 1
+    ).padStart(2, '0');
+
+
+  const dia =
+    String(
+      agora.getDate()
+    ).padStart(2, '0');
+
+
+  const hora =
+    String(
+      agora.getHours()
+    ).padStart(2, '0');
+
+
+  const minuto =
+    String(
+      agora.getMinutes()
+    ).padStart(2, '0');
+
+
+  const segundo =
+    String(
+      agora.getSeconds()
+    ).padStart(2, '0');
+
+
+  const aleatorio =
+    Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase();
+
+
+  return (
+    'INS-' +
+    ano +
+    mes +
+    dia +
+    '-' +
+    hora +
+    minuto +
+    segundo +
+    '-' +
+    aleatorio
+  );
+
+}
+
+
+/*
+=================================================
+CALCULAR RESULTADO
+=================================================
+*/
+
+function calcularResultado(
+  dados
+) {
+
+  let quantidadeNC = 0;
+
+  let quantidadeImpedimentos = 0;
+
+  const listaNC = [];
+
+  const listaImpedimentos = [];
+
+
+  itens.forEach(
+    function(item) {
+
+      const chave =
+        item[0];
+
+      const nome =
+        item[1];
+
+
+      if (
+        dados[chave] === 'NÃO'
+      ) {
+
+        quantidadeNC++;
+
+
+        const impeditivo =
+          matriz[chave] === true;
+
+
+        listaNC.push({
+
+          chave: chave,
+
+          nome: nome,
+
+          impeditivo: impeditivo
+
+        });
+
+
+        if (impeditivo) {
+
+          quantidadeImpedimentos++;
+
+          listaImpedimentos.push(
+            nome
+          );
+
+        }
+
+      }
+
+    }
+  );
+
+
+  let resultado;
+
+
+  if (
+    quantidadeImpedimentos > 0
+  ) {
+
+    resultado =
+      'NÃO LIBERADO';
+
+  } else if (
+    quantidadeNC > 0
+  ) {
+
+    resultado =
+      'APROVADO COM PENDÊNCIA';
+
+  } else {
+
+    resultado =
+      'APROVADO';
+
+  }
+
+
+  return {
+
+    resultado:
+      resultado,
+
+    quantidadeNC:
+      quantidadeNC,
+
+    quantidadeImpedimentos:
+      quantidadeImpedimentos,
+
+    listaNC:
+      listaNC,
+
+    listaImpedimentos:
+      listaImpedimentos
+
+  };
+
+}
+
+
+/*
+=================================================
+ENVIAR INSPEÇÃO
+=================================================
+*/
 
 async function enviarInspecao() {
+
+  const botao =
+    document.getElementById(
+      'botaoEnviar'
+    );
+
 
   const dados = {
 
     nome:
       document.getElementById(
         'nome'
-      ).value,
+      ).value.trim(),
 
     matricula:
       document.getElementById(
         'matricula'
-      ).value,
+      ).value.trim(),
 
     placa:
       document.getElementById(
         'placa'
       ).value
+      .trim()
       .toUpperCase(),
 
     km:
@@ -206,12 +711,13 @@ async function enviarInspecao() {
     observacao:
       document.getElementById(
         'observacao'
-      ).value || ''
+      ).value.trim()
 
   };
 
 
-  let incompleto = false;
+  let incompleto =
+    false;
 
 
   itens.forEach(
@@ -225,7 +731,8 @@ async function enviarInspecao() {
 
       if (!resposta) {
 
-        incompleto = true;
+        incompleto =
+          true;
 
       } else {
 
@@ -248,6 +755,8 @@ async function enviarInspecao() {
 
     !dados.km ||
 
+    !dados.dataInspecao ||
+
     incompleto
 
   ) {
@@ -261,158 +770,181 @@ async function enviarInspecao() {
   }
 
 
-  dados.id =
-    gerarId();
+  botao.disabled =
+    true;
 
 
-  dados.timestamp =
-    new Date()
-      .toISOString();
+  botao.innerText =
+    'REGISTRANDO INSPEÇÃO...';
 
 
-  const resultado =
-    calcularResultado(dados);
+  try {
 
+    /*
+    FOTO
+    */
 
-  dados.resultado =
-    resultado;
-
-
-  salvarLocalmente(dados);
-
-
-  mostrarComprovanteOffline(
-    dados
-  );
-
-
-  if (navigator.onLine) {
-
-    sincronizar();
-
-  }
-
-}
-
-
-function gerarId() {
-
-  const agora =
-    new Date();
-
-  const parteData =
-    agora
-      .toISOString()
-      .replace(
-        /[-:.TZ]/g,
-        ''
+    const inputFoto =
+      document.getElementById(
+        'foto'
       );
 
-  const aleatorio =
-    Math.random()
-      .toString(36)
-      .substring(2, 7)
-      .toUpperCase();
 
-  return (
-    'INS-' +
-    parteData +
-    '-' +
-    aleatorio
-  );
-
-}
+    const arquivo =
+      inputFoto.files[0];
 
 
-function calcularResultado(dados) {
+    if (arquivo) {
 
-  let nc = 0;
+      dados.foto = {
 
-  let impeditivos = 0;
+        nome:
+          arquivo.name,
 
+        tipo:
+          arquivo.type,
 
-  itens.forEach(
-    function(item) {
+        tamanho:
+          arquivo.size,
 
-      if (
-        dados[item[0]] === 'NÃO'
-      ) {
+        blob:
+          arquivo
 
-        nc++;
+      };
 
+    } else {
 
-        if (
-          matriz[item[0]]
-        ) {
-
-          impeditivos++;
-
-        }
-
-      }
+      dados.foto =
+        null;
 
     }
-  );
 
 
-  if (
-    impeditivos > 0
-  ) {
+    /*
+    IDENTIFICAÇÃO
+    */
 
-    return 'NÃO LIBERADO';
-
-  }
-
-
-  if (
-    nc > 0
-  ) {
-
-    return 'APROVADO COM PENDÊNCIA';
-
-  }
+    dados.id =
+      gerarId();
 
 
-  return 'APROVADO';
+    dados.timestampInspecao =
+      new Date().toISOString();
 
-}
+
+    dados.fusoHorarioMinutos =
+      new Date()
+        .getTimezoneOffset();
 
 
-function salvarLocalmente(dados) {
+    dados.statusSync =
+      'PENDENTE';
 
-  const fila =
-    JSON.parse(
-      localStorage.getItem(
-        'inspecoes_pendentes'
-      ) || '[]'
+
+    dados.timestampSincronizacao =
+      null;
+
+
+    /*
+    RESULTADO
+    */
+
+    const analise =
+      calcularResultado(
+        dados
+      );
+
+
+    dados.resultado =
+      analise.resultado;
+
+
+    dados.quantidadeNC =
+      analise.quantidadeNC;
+
+
+    dados.quantidadeImpedimentos =
+      analise.quantidadeImpedimentos;
+
+
+    dados.listaNC =
+      analise.listaNC;
+
+
+    dados.listaImpedimentos =
+      analise.listaImpedimentos;
+
+
+    /*
+    SALVAR NO APARELHO
+    */
+
+    await salvarInspecaoLocal(
+      dados
     );
 
 
-  fila.push(dados);
+    await atualizarContadorFila();
 
 
-  localStorage.setItem(
-    'inspecoes_pendentes',
-    JSON.stringify(fila)
-  );
+    /*
+    MOSTRAR COMPROVANTE
+    */
+
+    mostrarComprovante(
+      dados
+    );
+
+
+    /*
+    SE ESTIVER ONLINE,
+    TENTA SINCRONIZAR
+    */
+
+    if (
+      navigator.onLine
+    ) {
+
+      sincronizar();
+
+    }
+
+  } catch (erro) {
+
+    console.error(
+      erro
+    );
+
+
+    alert(
+      'Não foi possível armazenar a inspeção neste dispositivo. ' +
+      'Não considere a inspeção registrada. ' +
+      'Erro: ' +
+      erro.message
+    );
+
+
+    botao.disabled =
+      false;
+
+
+    botao.innerText =
+      'ENVIAR INSPEÇÃO';
+
+  }
 
 }
 
 
-function obterFila() {
+/*
+=================================================
+COMPROVANTE
+=================================================
+*/
 
-  return JSON.parse(
-
-    localStorage.getItem(
-      'inspecoes_pendentes'
-    ) || '[]'
-
-  );
-
-}
-
-
-function mostrarComprovanteOffline(dados) {
+function mostrarComprovante(
+  dados
+) {
 
   document.getElementById(
     'formulario'
@@ -426,14 +958,26 @@ function mostrarComprovanteOffline(dados) {
     );
 
 
-  let classe =
-    'aprovado';
-
-  let titulo =
-    '🟢 APROVADO';
+  let classe;
+  let titulo;
+  let mensagem;
 
 
   if (
+    dados.resultado ===
+    'APROVADO'
+  ) {
+
+    classe =
+      'aprovado';
+
+    titulo =
+      '🟢 APROVADO';
+
+    mensagem =
+      'Veículo liberado para operação.';
+
+  } else if (
     dados.resultado ===
     'APROVADO COM PENDÊNCIA'
   ) {
@@ -444,13 +988,10 @@ function mostrarComprovanteOffline(dados) {
     titulo =
       '🟡 APROVADO COM PENDÊNCIA';
 
-  }
+    mensagem =
+      'Veículo liberado com pendências não impeditivas.';
 
-
-  if (
-    dados.resultado ===
-    'NÃO LIBERADO'
-  ) {
+  } else {
 
     classe =
       'reprovado';
@@ -458,12 +999,87 @@ function mostrarComprovanteOffline(dados) {
     titulo =
       '🔴 NÃO LIBERADO';
 
+    mensagem =
+      'VEÍCULO NÃO LIBERADO PARA OPERAÇÃO.';
+
+  }
+
+
+  const dataHora =
+    new Date(
+      dados.timestampInspecao
+    );
+
+
+  const dataFormatada =
+    dataHora.toLocaleDateString(
+      'pt-BR'
+    );
+
+
+  const horaFormatada =
+    dataHora.toLocaleTimeString(
+      'pt-BR',
+      {
+        hour: '2-digit',
+        minute: '2-digit'
+      }
+    );
+
+
+  let blocoNC = '';
+
+
+  if (
+    dados.listaNC.length > 0
+  ) {
+
+    blocoNC = `
+
+      <div class="card">
+
+        <h2>
+          Não conformidades
+        </h2>
+
+        ${dados.listaNC
+          .map(function(item) {
+
+            return `
+
+              <div class="linha">
+
+                <span>
+                  ${item.nome}
+                </span>
+
+                <span>
+                  ${
+                    item.impeditivo
+                      ? '🔴 IMPEDITIVO'
+                      : '🟡 NÃO IMPEDITIVO'
+                  }
+                </span>
+
+              </div>
+
+            `;
+
+          })
+          .join('')
+        }
+
+      </div>
+
+    `;
+
   }
 
 
   div.innerHTML = `
 
-    <div class="resultado ${classe}">
+    <div
+      class="resultado ${classe}">
 
       <h1>
         ${titulo}
@@ -478,29 +1094,58 @@ function mostrarComprovanteOffline(dados) {
         COMPROVANTE
       </h2>
 
-      <div class="linha">
-        <b>Motorista</b>
-        <span>${dados.nome}</span>
-      </div>
-
-      <div class="linha">
-        <b>Matrícula</b>
-        <span>${dados.matricula}</span>
-      </div>
 
       <div class="linha">
         <b>Placa</b>
         <span>${dados.placa}</span>
       </div>
 
+
+      <div class="linha">
+        <b>Motorista</b>
+        <span>${dados.nome}</span>
+      </div>
+
+
+      <div class="linha">
+        <b>Matrícula</b>
+        <span>${dados.matricula}</span>
+      </div>
+
+
+      <div class="linha">
+        <b>Data</b>
+        <span>${dataFormatada}</span>
+      </div>
+
+
+      <div class="linha">
+        <b>Hora</b>
+        <span>${horaFormatada}</span>
+      </div>
+
+
       <div class="linha">
         <b>KM</b>
         <span>${dados.km}</span>
       </div>
 
+
       <div class="linha">
-        <b>Data</b>
-        <span>${dados.dataInspecao}</span>
+        <b>Verificações</b>
+        <span>${itens.length}</span>
+      </div>
+
+
+      <div class="linha">
+        <b>Não conformidades</b>
+        <span>${dados.quantidadeNC}</span>
+      </div>
+
+
+      <div class="linha">
+        <b>Impedimentos</b>
+        <span>${dados.quantidadeImpedimentos}</span>
       </div>
 
     </div>
@@ -517,20 +1162,62 @@ function mostrarComprovanteOffline(dados) {
 
     <div class="card">
 
-      <h3>
+      <h2 style="text-align:center">
+
+        ${mensagem}
+
+      </h2>
+
+    </div>
+
+
+    ${blocoNC}
+
+
+    ${
+      dados.observacao
+        ? `
+
+          <div class="card">
+
+            <h2>
+              Observações
+            </h2>
+
+            <p>
+              ${dados.observacao}
+            </p>
+
+          </div>
+
+        `
+        : ''
+    }
+
+
+    <div class="card">
+
+      <h3 style="text-align:center">
+
         ${
           navigator.onLine
-            ? '☁️ Enviando ao sistema...'
-            : '📴 Inspeção armazenada neste dispositivo'
+            ? '☁️ Aguardando confirmação do servidor'
+            : '📴 INSPEÇÃO REGISTRADA OFFLINE'
         }
+
       </h3>
 
-      <p>
+
+      <p style="text-align:center">
+
         ${
           navigator.onLine
-            ? 'A inspeção será sincronizada com o sistema.'
-            : 'Quando a conexão retornar, ela será enviada automaticamente.'
+
+            ? 'A inspeção está armazenada neste dispositivo e será sincronizada com o sistema.'
+
+            : 'Esta inspeção está armazenada neste dispositivo e será enviada quando houver conexão.'
         }
+
       </p>
 
     </div>
@@ -552,11 +1239,13 @@ function mostrarComprovanteOffline(dados) {
 }
 
 
-window.addEventListener(
-  'online',
-  sincronizar
-);
+/*
+=================================================
+SINCRONIZAÇÃO
 
+NA PRÓXIMA ETAPA VAMOS LIGAR AO APPS SCRIPT.
+=================================================
+*/
 
 async function sincronizar() {
 
@@ -569,12 +1258,12 @@ async function sincronizar() {
   }
 
 
-  const fila =
-    obterFila();
+  const pendentes =
+    await obterInspecoesPendentes();
 
 
   if (
-    fila.length === 0
+    pendentes.length === 0
   ) {
 
     return;
@@ -582,35 +1271,78 @@ async function sincronizar() {
   }
 
 
-  /*
-   * AQUI ENTRARÁ A COMUNICAÇÃO
-   * COM O GOOGLE APPS SCRIPT.
-   *
-   * NÃO VAMOS COLOCAR AINDA.
-   */
-
-
   console.log(
-    'Inspeções aguardando sincronização:',
-    fila.length
+    pendentes.length +
+    ' inspeção(ões) aguardando sincronização.'
   );
+
+
+  /*
+  A conexão com o Google Apps Script
+  será adicionada aqui na próxima etapa.
+  */
 
 }
 
 
+/*
+=================================================
+INICIAR SISTEMA
+=================================================
+*/
+
+async function iniciarSistema() {
+
+  try {
+
+    await abrirBanco();
+
+    atualizarStatus();
+
+    await atualizarContadorFila();
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao iniciar IndexedDB:',
+      erro
+    );
+
+  }
+
+}
+
+
+iniciarSistema();
+
+
+/*
+=================================================
+SERVICE WORKER
+=================================================
+*/
+
 if (
-  'serviceWorker'
-  in navigator
+  'serviceWorker' in navigator
 ) {
 
   window.addEventListener(
     'load',
     function() {
 
-      navigator
-        .serviceWorker
+      navigator.serviceWorker
         .register(
-          'service-worker.js'
+          './service-worker.js'
+        )
+        .catch(
+          function(erro) {
+
+            console.error(
+              'Erro no Service Worker:',
+              erro
+            );
+
+          }
         );
 
     }
