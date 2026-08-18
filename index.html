@@ -24,17 +24,79 @@
 
    <div class="status-bar">
 
-  <div>
+  <div class="status-conexao">
+
     <span id="statusIcon">🟢</span>
-    <span id="statusTexto">ONLINE</span>
+
+    <span id="statusTexto">
+      ONLINE
+    </span>
+
   </div>
 
-  <div
-    id="filaStatus"
-    style="margin-top:6px; font-size:13px;">
+
+  <div id="filaStatus">
     0 inspeções aguardando sincronização
   </div>
+
+
+  <div class="status-actions">
+
+    <button
+      id="botaoSincronizar"
+      class="botao-status"
+      onclick="sincronizarAgora()">
+
+      🔄 Sincronizar agora
+
+    </button>
+
+
+    <button
+      class="botao-status botao-secundario"
+      onclick="abrirTelaInspecoes()">
+
+      📋 Inspeções neste aparelho
+
+    </button>
+
+  </div>
+
+</div>
+
+
+<div
+  id="painelInspecoes"
+  class="painel-inspecoes"
+  style="display:none">
+
+  <div class="card">
+
+    <div class="painel-cabecalho">
+
+      <h2>
+        Inspeções neste aparelho
+      </h2>
+
+      <button
+        class="botao-fechar"
+        onclick="fecharTelaInspecoes()">
+
+        ✕
+
+      </button>
+
     </div>
+
+
+    <div id="resumoInspecoes"></div>
+
+
+    <div id="listaInspecoes"></div>
+
+  </div>
+
+</div>
 
 
     <div id="formulario">
