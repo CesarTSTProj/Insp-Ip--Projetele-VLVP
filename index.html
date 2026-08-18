@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+
+  <meta name="theme-color"
+        content="#1769aa">
+
+  <title>INSP IPÊ PROJ</title>
+
+  <link rel="stylesheet"
+        href="style.css">
+
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="status-bar">
+
+      <span id="statusIcon">🟢</span>
+
+      <span id="statusTexto">
+        ONLINE
+      </span>
+
+    </div>
+
+
+    <div id="formulario">
+
+      <div class="card">
+
+        <h1>
+          INSP IPÊ PROJ
+        </h1>
+
+        <h2>
+          INSPEÇÃO VEICULAR
+        </h2>
+
+        <p id="tipoVeiculo"></p>
+
+      </div>
+
+
+      <div class="card">
+
+        <label>
+          Nome do motorista
+        </label>
+
+        <input
+          id="nome"
+          required>
+
+
+        <label>
+          Matrícula do motorista
+        </label>
+
+        <input
+          id="matricula"
+          required>
+
+
+        <label>
+          Placa do veículo
+        </label>
+
+        <input
+          id="placa"
+          required>
+
+
+        <label>
+          KM no momento da inspeção
+        </label>
+
+        <input
+          id="km"
+          type="number"
+          required>
+
+
+        <label>
+          Data da inspeção
+        </label>
+
+        <input
+          id="data"
+          type="date"
+          required>
+
+
+        <label>
+          Foto do painel
+        </label>
+
+        <input
+          id="foto"
+          type="file"
+          accept="image/*">
+
+      </div>
+
+
+      <div class="card">
+
+        <h2>
+          Checklist
+        </h2>
+
+        <div id="checklist"></div>
+
+      </div>
+
+
+      <div class="card">
+
+        <label>
+          Alguma observação?
+        </label>
+
+        <textarea
+          id="observacao"
+          placeholder="Descreva eventuais não conformidades ou observações."></textarea>
+
+      </div>
+
+
+      <div class="card">
+
+        <button
+          id="botaoEnviar"
+          onclick="enviarInspecao()">
+
+          ENVIAR INSPEÇÃO
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="resultado"
+      style="display:none">
+
+    </div>
+
+  </div>
+
+
+  <script src="app.js"></script>
+
+</body>
+
+</html>
