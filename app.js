@@ -15,96 +15,331 @@ let idComprovanteAtual = null;
 ITENS DO CHECKLIST
 =================================================
 */
+/*
+=================================================
+TIPO DE VEÍCULO DEFINIDO PELO QR CODE
+=================================================
+*/
 
-const itens = [
+const parametrosURL =
+  new URLSearchParams(
+    window.location.search
+  );
 
-  ['documento',
-   'Documento do veículo presente?'],
 
-  ['iluminacao',
-   'Sistema de iluminação funcionando? (faróis alto e baixo / setas / luz de freio / luz de ré)'],
-
-  ['sirene',
-   'Sirene de ré funcionando?'],
-
-  ['giroflex',
-   'Giroflex funcionando?'],
-
-  ['antena',
-   'Antena de sinalização e bandeirola presente?'],
-
-  ['ar',
-   'Ar condicionado funcionando?'],
-
-  ['limpadores',
-   'Limpadores de para-brisa e sistema de esguicho funcionando?'],
-
-  ['cinto',
-   'Cinto de segurança em boas condições?'],
-
-  ['emergencia',
-   'Equipamento de emergência presente? (chave de roda, macaco, pneu estepe, triângulo)'],
-
-  ['pneus',
-   'Pneu em boas condições e dentro do limite do TWI?'],
-
-  ['freios',
-   'Freio de estacionamento e de serviço funcionando?'],
-
-  ['hidraulico',
-   'Sistema hidráulico está em boas condições?'],
-
-  ['radiador',
-   'Água do reservatório do radiador no nível?'],
-
-  ['cincoS',
-   '5S do veículo foi feito?']
-
-];
+const tipoVeiculo =
+  parametrosURL.get('tipo') === 'pesado'
+    ? 'pesado'
+    : 'leve';
 
 
 /*
 =================================================
-MATRIZ DE CRITICIDADE
-
-true  = impeditivo
-false = não impeditivo
+CONFIGURAÇÕES DOS CHECKLISTS
 =================================================
 */
 
-const matriz = {
+const checklists = {
 
-  documento: true,
+  /*
+  ===============================================
+  VEÍCULOS LEVES
+  ===============================================
+  */
 
-  iluminacao: true,
+  leve: {
 
-  sirene: false,
+    titulo:
+      'INSPEÇÃO DE VEÍCULOS LEVES',
 
-  giroflex: false,
+    versao:
+      'VL-2026-01',
 
-  antena: false,
+    itens: [
 
-  ar: false,
+      [
+        'documento',
+        'Documento do veículo presente?'
+      ],
 
-  limpadores: false,
+      [
+        'iluminacao',
+        'Sistema de iluminação funcionando? (faróis alto e baixo / setas / luz de freio / luz de ré)'
+      ],
 
-  cinto: true,
+      [
+        'sirene',
+        'Sirene de ré funcionando?'
+      ],
 
-  emergencia: true,
+      [
+        'giroflex',
+        'Giroflex funcionando?'
+      ],
 
-  pneus: true,
+      [
+        'antena',
+        'Antena de sinalização e bandeirola presente?'
+      ],
 
-  freios: true,
+      [
+        'ar',
+        'Ar condicionado funcionando?'
+      ],
 
-  hidraulico: true,
+      [
+        'limpadores',
+        'Limpadores de para-brisa e sistema de esguicho funcionando?'
+      ],
 
-  radiador: true,
+      [
+        'cinto',
+        'Cinto de segurança em boas condições?'
+      ],
 
-  cincoS: false
+      [
+        'emergencia',
+        'Equipamento de emergência presente? (chave de roda, macaco, pneu estepe, triângulo)'
+      ],
+
+      [
+        'pneus',
+        'Pneu em boas condições e dentro do limite do TWI?'
+      ],
+
+      [
+        'freios',
+        'Freio de estacionamento e de serviço funcionando?'
+      ],
+
+      [
+        'hidraulico',
+        'Sistema hidráulico está em boas condições?'
+      ],
+
+      [
+        'radiador',
+        'Água do reservatório do radiador no nível?'
+      ],
+
+      [
+        'cincoS',
+        '5S do veículo foi feito?'
+      ]
+
+    ],
+
+
+    matriz: {
+
+      documento: true,
+
+      iluminacao: true,
+
+      sirene: false,
+
+      giroflex: false,
+
+      antena: false,
+
+      ar: false,
+
+      limpadores: false,
+
+      cinto: true,
+
+      emergencia: true,
+
+      pneus: true,
+
+      freios: true,
+
+      hidraulico: true,
+
+      radiador: true,
+
+      cincoS: false
+
+    }
+
+  },
+
+
+  /*
+  ===============================================
+  VEÍCULOS PESADOS
+  ===============================================
+  */
+
+  pesado: {
+
+    titulo:
+      'INSPEÇÃO DE VEÍCULOS PESADOS',
+
+    versao:
+      'VP-2026-01',
+
+    itens: [
+
+      [
+        'documento',
+        'Documento do veículo presente?'
+      ],
+
+      [
+        'iluminacao',
+        'Sistema de iluminação funcionando? (faróis alto e baixo / setas / luz de freio e lanterna / luz de ré)'
+      ],
+
+      [
+        'sirene',
+        'Sirene de ré funcionando?'
+      ],
+
+      [
+        'giroflex',
+        'Giroflex presente?'
+      ],
+
+      [
+        'ar',
+        'Ar condicionado funcionando?'
+      ],
+
+      [
+        'limpadores',
+        'Limpadores de para-brisa e sistema de esguicho funcionando?'
+      ],
+
+      [
+        'cinto',
+        'Cinto de segurança em boas condições?'
+      ],
+
+      [
+        'emergencia',
+        'Equipamento de emergência presente? (cone e triângulo)'
+      ],
+
+      [
+        'pneus',
+        'Pneus e sobressalente em boas condições e dentro do limite do TWI?'
+      ],
+
+      [
+        'freios',
+        'Freios funcionando? (retarder / freio motor / freio de estacionamento / freio de serviço)'
+      ],
+
+      [
+        'extintor',
+        'Extintor de incêndio presente e dentro do prazo de validade?'
+      ],
+
+      [
+        'oleoMotor',
+        'Óleo de motor está com a cor e no nível adequado?'
+      ],
+
+      [
+        'radiador',
+        'Água do reservatório do radiador no nível?'
+      ],
+
+      [
+        'vazamentoAr',
+        'Está isento de vazamento de ar?'
+      ],
+
+      [
+        'cincoS',
+        '5S do veículo foi feito?'
+      ],
+
+      [
+        'saidasEmergencia',
+        'Saídas de emergência desobstruídas?'
+      ],
+
+      [
+        'marteloEmergencia',
+        'Martelo de emergência presente?'
+      ]
+
+    ],
+
+
+    matriz: {
+
+      documento: true,
+
+      iluminacao: true,
+
+      sirene: false,
+
+      giroflex: false,
+
+      ar: false,
+
+      limpadores: false,
+
+      cinto: true,
+
+      emergencia: false,
+
+      pneus: true,
+
+      freios: true,
+
+      extintor: true,
+
+      oleoMotor: true,
+
+      radiador: true,
+
+      vazamentoAr: true,
+
+      cincoS: false,
+
+      saidasEmergencia: false,
+
+      marteloEmergencia: false
+
+    }
+
+  }
 
 };
 
 
+/*
+=================================================
+CARREGAR CONFIGURAÇÃO DO QR CODE
+=================================================
+*/
+
+const configuracaoAtual =
+  checklists[tipoVeiculo];
+
+
+const itens =
+  configuracaoAtual.itens;
+
+
+const matriz =
+  configuracaoAtual.matriz;
+
+
+/*
+=================================================
+ALTERAR TÍTULO DA TELA
+=================================================
+*/
+
+document.getElementById(
+  'tituloInspecao'
+).innerText =
+  configuracaoAtual.titulo;
 /*
 =================================================
 CRIAR CHECKLIST NA TELA
@@ -1297,6 +1532,11 @@ async function enviarInspecao() {
 
   const dados = {
 
+    tipo:
+  tipoVeiculo,
+
+versaoChecklist:
+  configuracaoAtual.versao,
     nome:
       document.getElementById(
         'nome'
@@ -1711,7 +1951,19 @@ function mostrarComprovante(
       <h2>
         COMPROVANTE
       </h2>
+<div class="linha">
 
+  <b>Tipo</b>
+
+  <span>
+    ${
+      dados.tipo === 'pesado'
+        ? 'VEÍCULO PESADO'
+        : 'VEÍCULO LEVE'
+    }
+  </span>
+
+</div>
 
       <div class="linha">
         <b>Placa</b>
