@@ -1063,7 +1063,18 @@ function atualizarStatus() {
       ? 'ONLINE'
       : 'OFFLINE';
 
+const botaoSincronizar =
+  document.getElementById(
+    'botaoSincronizar'
+  );
 
+
+if (botaoSincronizar) {
+
+  botaoSincronizar.disabled =
+    !online;
+
+}
   atualizarContadorFila();
 
 }
@@ -2319,6 +2330,107 @@ function atualizarComprovanteSincronizado(id) {
   }
 
 }
+/*
+=================================================
+BOTÃO SINCRONIZAR AGORA
+=================================================
+*/
+
+async function sincronizarAgora() {
+
+  if (
+    !navigator.onLine
+  ) {
+
+    alert(
+      'O aparelho está offline. As inspeções permanecem armazenadas e serão enviadas quando a conexão retornar.'
+    );
+
+    return;
+
+  }
+
+
+  const botao =
+    document.getElementById(
+      'botaoSincronizar'
+    );
+
+
+  if (botao) {
+
+    botao.disabled =
+      true;
+
+
+    botao.innerText =
+      '🔄 Sincronizando...';
+
+  }
+
+
+  try {
+
+    await sincronizar();
+
+
+    const pendentes =
+      await obterInspecoesPendentes();
+
+
+    if (
+      pendentes.length === 0
+    ) {
+
+      alert(
+        'Sincronização concluída. Todas as inspeções deste aparelho foram enviadas.'
+      );
+
+    } else {
+
+      alert(
+        'A sincronização foi executada, mas ' +
+        pendentes.length +
+        ' inspeção(ões) ainda aguardam envio.'
+      );
+
+    }
+
+
+  } catch (erro) {
+
+    console.error(
+      'Erro na sincronização manual:',
+      erro
+    );
+
+
+    alert(
+      'Não foi possível concluir a sincronização. As inspeções permanecem armazenadas neste aparelho.'
+    );
+
+  } finally {
+
+    if (botao) {
+
+      botao.disabled =
+        !navigator.onLine;
+
+
+      botao.innerText =
+        '🔄 Sincronizar agora';
+
+    }
+
+
+    await atualizarContadorFila();
+
+
+    await atualizarTelaInspecoes();
+
+  }
+
+}
 let sincronizacaoEmAndamento =
   false;
 
@@ -2441,6 +2553,8 @@ async function sincronizar() {
 
 
     await atualizarContadorFila();
+
+    await atualizarTelaInspecoes();
 
   }
 
