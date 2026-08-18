@@ -7,6 +7,7 @@ CONFIGURAÇÕES DO SISTEMA
 const DB_NAME = 'INSP_IPE_PROJETELE';
 const DB_VERSION = 1;
 const STORE_NAME = 'inspecoes';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxulJAYuJ_CzJMU6BAsiQPkzcSuUJVJ3fr4UupFjPeNjGytzI7sqwW2ZhlbvGqoLLr-/exec';
 
 
 /*
