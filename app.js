@@ -8,7 +8,7 @@ const DB_NAME = 'INSP_IPE_PROJETELE';
 const DB_VERSION = 1;
 const STORE_NAME = 'inspecoes';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxulJAYuJ_CzJMU6BAsiQPkzcSuUJVJ3fr4UupFjPeNjGytzI7sqwW2ZhlbvGqoLLr-/exec';
-
+let idComprovanteAtual = null;
 
 /*
 =================================================
@@ -984,6 +984,8 @@ COMPROVANTE
 function mostrarComprovante(
   dados
 ) {
+  idComprovanteAtual =
+  dados.id;
 
   document.getElementById(
     'formulario'
@@ -1234,32 +1236,36 @@ function mostrarComprovante(
     }
 
 
-    <div class="card">
+<div class="card">
 
-      <h3 style="text-align:center">
+  <h3
+    id="statusServidor"
+    style="text-align:center">
 
-        ${
-          navigator.onLine
-            ? '☁️ Aguardando confirmação do servidor'
-            : '📴 INSPEÇÃO REGISTRADA OFFLINE'
-        }
+    ${
+      navigator.onLine
+        ? '☁️ Aguardando confirmação do servidor'
+        : '📴 INSPEÇÃO REGISTRADA OFFLINE'
+    }
 
-      </h3>
+  </h3>
 
 
-      <p style="text-align:center">
+  <p
+    id="textoServidor"
+    style="text-align:center">
 
-        ${
-          navigator.onLine
+    ${
+      navigator.onLine
 
-            ? 'A inspeção está armazenada neste dispositivo e será sincronizada com o sistema.'
+        ? 'A inspeção está armazenada neste dispositivo e está aguardando confirmação do sistema.'
 
-            : 'Esta inspeção está armazenada neste dispositivo e será enviada quando houver conexão.'
-        }
+        : 'Esta inspeção está armazenada neste dispositivo e será enviada quando houver conexão.'
+    }
 
-      </p>
+  </p>
 
-    </div>
+</div>
 
 
     <div class="print">
@@ -1285,11 +1291,477 @@ SINCRONIZAÇÃO
 NA PRÓXIMA ETAPA VAMOS LIGAR AO APPS SCRIPT.
 =================================================
 */
+async function marcarComoSincronizada(
+  id,
+  timestampSincronizacao
+) {
+
+  const db =
+    await abrirBanco();
+
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const transacao =
+        db.transaction(
+          STORE_NAME,
+          'readwrite'
+        );
+
+
+      const store =
+        transacao.objectStore(
+          STORE_NAME
+        );
+
+
+      const busca =
+        store.get(id);
+
+
+      busca.onsuccess =
+        function() {
+
+          const dados =
+            busca.result;
+
+
+          if (!dados) {
+
+            resolve(false);
+
+            return;
+
+          }
+
+
+          dados.statusSync =
+            'SINCRONIZADA';
+
+
+          dados.timestampSincronizacao =
+            timestampSincronizacao ||
+            new Date().toISOString();
+
+
+          const salvar =
+            store.put(dados);
+
+
+          salvar.onsuccess =
+            function() {
+
+              resolve(true);
+
+            };
+
+
+          salvar.onerror =
+            function(event) {
+
+              reject(
+                event.target.error
+              );
+
+            };
+
+        };
+
+
+      busca.onerror =
+        function(event) {
+
+          reject(
+            event.target.error
+          );
+
+        };
+
+    }
+  );
+
+}
+function blobParaBase64(blob) {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const reader =
+        new FileReader();
+
+
+      reader.onload =
+        function() {
+
+          const resultado =
+            reader.result;
+
+
+          const base64 =
+            resultado
+              .split(',')[1];
+
+
+          resolve(base64);
+
+        };
+
+
+      reader.onerror =
+        function() {
+
+          reject(
+            reader.error
+          );
+
+        };
+
+
+      reader.readAsDataURL(
+        blob
+      );
+
+    }
+  );
+
+}
+
+
+async function prepararPayload(
+  dados
+) {
+
+  const payload = {
+    ...dados
+  };
+
+
+  if (
+    dados.foto &&
+    dados.foto.blob
+  ) {
+
+    payload.foto = {
+
+      nome:
+        dados.foto.nome,
+
+      tipo:
+        dados.foto.tipo,
+
+      base64:
+        await blobParaBase64(
+          dados.foto.blob
+        )
+
+    };
+
+  } else {
+
+    payload.foto =
+      null;
+
+  }
+
+
+  return payload;
+
+}
+function origemGoogleValida(
+  origem
+) {
+
+  try {
+
+    const url =
+      new URL(origem);
+
+
+    return (
+
+      url.protocol === 'https:' &&
+
+      (
+        url.hostname ===
+          'script.google.com'
+
+        ||
+
+        url.hostname.endsWith(
+          '.googleusercontent.com'
+        )
+      )
+
+    );
+
+  } catch (erro) {
+
+    return false;
+
+  }
+
+}
+
+
+async function enviarParaServidor(
+  dados
+) {
+
+  const payload =
+    await prepararPayload(
+      dados
+    );
+
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const nomeIframe =
+        'sync_' +
+        Date.now() +
+        '_' +
+        Math.random()
+          .toString(36)
+          .substring(2);
+
+
+      const iframe =
+        document.createElement(
+          'iframe'
+        );
+
+
+      iframe.name =
+        nomeIframe;
+
+
+      iframe.style.display =
+        'none';
+
+
+      document.body.appendChild(
+        iframe
+      );
+
+
+      const formulario =
+        document.createElement(
+          'form'
+        );
+
+
+      formulario.method =
+        'POST';
+
+
+      formulario.action =
+        APPS_SCRIPT_URL;
+
+
+      formulario.target =
+        nomeIframe;
+
+
+      formulario.style.display =
+        'none';
+
+
+      const input =
+        document.createElement(
+          'input'
+        );
+
+
+      input.type =
+        'hidden';
+
+
+      input.name =
+        'payload';
+
+
+      input.value =
+        JSON.stringify(
+          payload
+        );
+
+
+      formulario.appendChild(
+        input
+      );
+
+
+      document.body.appendChild(
+        formulario
+      );
+
+
+      let timer;
+
+
+      function limpar() {
+
+        window.removeEventListener(
+          'message',
+          receberResposta
+        );
+
+
+        formulario.remove();
+
+
+        setTimeout(
+          function() {
+
+            iframe.remove();
+
+          },
+          500
+        );
+
+      }
+
+
+      function receberResposta(
+        event
+      ) {
+
+        if (
+          !origemGoogleValida(
+            event.origin
+          )
+        ) {
+
+          return;
+
+        }
+
+
+        const resposta =
+          event.data;
+
+
+        if (
+          !resposta ||
+
+          resposta.source !==
+            'INSP_IPE_BACKEND' ||
+
+          resposta.id !==
+            dados.id
+        ) {
+
+          return;
+
+        }
+
+
+        clearTimeout(
+          timer
+        );
+
+
+        limpar();
+
+
+        if (
+          resposta.sucesso
+        ) {
+
+          resolve(
+            resposta
+          );
+
+        } else {
+
+          reject(
+            new Error(
+              resposta.erro ||
+              'Servidor não confirmou a inspeção.'
+            )
+          );
+
+        }
+
+      }
+
+
+      window.addEventListener(
+        'message',
+        receberResposta
+      );
+
+
+      timer =
+        setTimeout(
+          function() {
+
+            limpar();
+
+
+            reject(
+              new Error(
+                'Tempo limite de sincronização excedido.'
+              )
+            );
+
+          },
+          45000
+        );
+
+
+      document.body.appendChild(
+        formulario
+      );
+
+
+      formulario.submit();
+
+    }
+  );
+
+}
+function atualizarComprovanteSincronizado(id) {
+
+  if (id !== idComprovanteAtual) {
+    return;
+  }
+
+  const titulo =
+    document.getElementById(
+      'statusServidor'
+    );
+
+  const texto =
+    document.getElementById(
+      'textoServidor'
+    );
+
+  if (titulo) {
+
+    titulo.innerText =
+      '✅ SINCRONIZADA COM O SISTEMA';
+
+  }
+
+  if (texto) {
+
+    texto.innerText =
+      'A inspeção foi recebida e registrada no sistema da empresa.';
+
+  }
+
+}
+let sincronizacaoEmAndamento =
+  false;
+
 
 async function sincronizar() {
 
   if (
-    !navigator.onLine
+    !navigator.onLine ||
+    sincronizacaoEmAndamento
   ) {
 
     return;
@@ -1297,29 +1769,114 @@ async function sincronizar() {
   }
 
 
-  const pendentes =
-    await obterInspecoesPendentes();
+  sincronizacaoEmAndamento =
+    true;
 
 
-  if (
-    pendentes.length === 0
-  ) {
+  try {
 
-    return;
+    const pendentes =
+      await obterInspecoesPendentes();
+
+
+    if (
+      pendentes.length === 0
+    ) {
+
+      return;
+
+    }
+
+
+    for (
+      const inspecao
+      of pendentes
+    ) {
+
+      /*
+      Se a internet cair no meio,
+      paramos imediatamente.
+      */
+
+      if (
+        !navigator.onLine
+      ) {
+
+        break;
+
+      }
+
+
+      try {
+
+        console.log(
+          'Sincronizando:',
+          inspecao.id
+        );
+
+
+        const resposta =
+          await enviarParaServidor(
+            inspecao
+          );
+
+
+        /*
+        SOMENTE depois da confirmação
+        do Google marcamos como sincronizada.
+        */
+
+        await marcarComoSincronizada(
+
+          inspecao.id,
+
+          resposta.timestampSincronizacao
+
+        );
+
+
+        console.log(
+          'Sincronizada:',
+          inspecao.id
+        );
+
+
+        atualizarComprovanteSincronizado(
+          inspecao.id
+        );
+
+
+      } catch (erro) {
+
+        console.error(
+
+          'Falha ao sincronizar ' +
+          inspecao.id,
+
+          erro
+
+        );
+
+
+        /*
+        Não apagamos.
+        Continua PENDENTE.
+        */
+
+      }
+
+    }
+
+
+  } finally {
+
+    sincronizacaoEmAndamento =
+      false;
+
+
+    await atualizarContadorFila();
 
   }
-
-
-  console.log(
-    pendentes.length +
-    ' inspeção(ões) aguardando sincronização.'
-  );
-
-
-  /*
-  A conexão com o Google Apps Script
-  será adicionada aqui na próxima etapa.
-  */
 
 }
 
