@@ -399,37 +399,75 @@ async function atualizarContadorFila() {
 
   try {
 
-    const pendentes =
-      await obterInspecoesPendentes();
+    const db = await abrirBanco();
+
+    const quantidade = await new Promise(function(resolve, reject) {
+
+      const transacao = db.transaction(
+        STORE_NAME,
+        'readonly'
+      );
+
+      const store = transacao.objectStore(
+        STORE_NAME
+      );
+
+      const indice = store.index(
+        'statusSync'
+      );
+
+      const requisicao = indice.count(
+        'PENDENTE'
+      );
+
+      requisicao.onsuccess = function() {
+        resolve(requisicao.result);
+      };
+
+      requisicao.onerror = function(event) {
+        reject(event.target.error);
+      };
+
+    });
 
 
-    const quantidade =
-      pendentes.length;
+    const elemento =
+      document.getElementById('filaStatus');
 
 
-    const texto =
-      quantidade === 1
-        ? '1 inspeção aguardando sincronização'
-        : quantidade +
-          ' inspeções aguardando sincronização';
+    if (!elemento) {
+      return;
+    }
 
 
-    document.getElementById(
-      'filaStatus'
-    ).innerText =
-      texto;
+    if (quantidade === 0) {
+
+      elemento.innerText =
+        '0 inspeções aguardando sincronização';
+
+    } else if (quantidade === 1) {
+
+      elemento.innerText =
+        '1 inspeção aguardando sincronização';
+
+    } else {
+
+      elemento.innerText =
+        quantidade +
+        ' inspeções aguardando sincronização';
+
+    }
 
   } catch (erro) {
 
     console.error(
-      'Erro ao consultar IndexedDB:',
+      'Erro ao contar inspeções pendentes:',
       erro
     );
 
   }
 
 }
-
 
 /*
 =================================================
