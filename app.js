@@ -395,7 +395,573 @@ async function obterInspecoesPendentes() {
 CONTADOR DE INSPEÇÕES PENDENTES
 =================================================
 */
+/*
+=================================================
+OBTER RESUMO DE TODAS AS INSPEÇÕES DO APARELHO
+=================================================
+*/
 
+async function obterResumoInspecoes() {
+
+  const db =
+    await abrirBanco();
+
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const transacao =
+        db.transaction(
+          STORE_NAME,
+          'readonly'
+        );
+
+
+      const store =
+        transacao.objectStore(
+          STORE_NAME
+        );
+
+
+      const requisicao =
+        store.openCursor();
+
+
+      const registros =
+        [];
+
+
+      requisicao.onsuccess =
+        function(event) {
+
+          const cursor =
+            event.target.result;
+
+
+          if (cursor) {
+
+            const dados =
+              cursor.value;
+
+
+            /*
+            Não carregamos a foto para a tela.
+            Apenas os dados resumidos.
+            */
+
+            registros.push({
+
+              id:
+                dados.id,
+
+              placa:
+                dados.placa || '',
+
+              nome:
+                dados.nome || '',
+
+              matricula:
+                dados.matricula || '',
+
+              km:
+                dados.km || '',
+
+              resultado:
+                dados.resultado || '',
+
+              statusSync:
+                dados.statusSync || 'PENDENTE',
+
+              timestampInspecao:
+                dados.timestampInspecao || '',
+
+              timestampSincronizacao:
+                dados.timestampSincronizacao || null,
+
+              quantidadeNC:
+                dados.quantidadeNC || 0,
+
+              quantidadeImpedimentos:
+                dados.quantidadeImpedimentos || 0
+
+            });
+
+
+            cursor.continue();
+
+          } else {
+
+            registros.sort(
+              function(a, b) {
+
+                return (
+                  new Date(
+                    b.timestampInspecao
+                  ) -
+                  new Date(
+                    a.timestampInspecao
+                  )
+                );
+
+              }
+            );
+
+
+            resolve(
+              registros
+            );
+
+          }
+
+        };
+
+
+      requisicao.onerror =
+        function(event) {
+
+          reject(
+            event.target.error
+          );
+
+        };
+
+    }
+  );
+
+}
+
+
+/*
+=================================================
+SEGURANÇA PARA TEXTO MOSTRADO NA TELA
+=================================================
+*/
+
+function escaparHtml(valor) {
+
+  return String(
+    valor ?? ''
+  )
+
+    .replaceAll(
+      '&',
+      '&amp;'
+    )
+
+    .replaceAll(
+      '<',
+      '&lt;'
+    )
+
+    .replaceAll(
+      '>',
+      '&gt;'
+    )
+
+    .replaceAll(
+      '"',
+      '&quot;'
+    )
+
+    .replaceAll(
+      "'",
+      '&#039;'
+    );
+
+}
+
+
+/*
+=================================================
+CONTROLE DA TELA DE INSPEÇÕES
+=================================================
+*/
+
+let telaAntesPainel =
+  'formulario';
+
+
+async function abrirTelaInspecoes() {
+
+  const formulario =
+    document.getElementById(
+      'formulario'
+    );
+
+
+  const resultado =
+    document.getElementById(
+      'resultado'
+    );
+
+
+  if (
+    resultado.style.display !==
+    'none'
+  ) {
+
+    telaAntesPainel =
+      'resultado';
+
+  } else {
+
+    telaAntesPainel =
+      'formulario';
+
+  }
+
+
+  formulario.style.display =
+    'none';
+
+
+  resultado.style.display =
+    'none';
+
+
+  document.getElementById(
+    'painelInspecoes'
+  ).style.display =
+    'block';
+
+
+  await atualizarTelaInspecoes();
+
+
+  window.scrollTo(
+    {
+      top: 0,
+      behavior: 'smooth'
+    }
+  );
+
+}
+
+
+function fecharTelaInspecoes() {
+
+  document.getElementById(
+    'painelInspecoes'
+  ).style.display =
+    'none';
+
+
+  if (
+    telaAntesPainel ===
+    'resultado'
+  ) {
+
+    document.getElementById(
+      'resultado'
+    ).style.display =
+      'block';
+
+  } else {
+
+    document.getElementById(
+      'formulario'
+    ).style.display =
+      'block';
+
+  }
+
+}
+
+
+/*
+=================================================
+DESENHAR HISTÓRICO LOCAL
+=================================================
+*/
+
+async function atualizarTelaInspecoes() {
+
+  const painel =
+    document.getElementById(
+      'painelInspecoes'
+    );
+
+
+  if (
+    !painel ||
+    painel.style.display === 'none'
+  ) {
+
+    return;
+
+  }
+
+
+  const registros =
+    await obterResumoInspecoes();
+
+
+  const pendentes =
+    registros.filter(
+      item =>
+        item.statusSync ===
+        'PENDENTE'
+    ).length;
+
+
+  const sincronizadas =
+    registros.filter(
+      item =>
+        item.statusSync ===
+        'SINCRONIZADA'
+    ).length;
+
+
+  document.getElementById(
+    'resumoInspecoes'
+  ).innerHTML = `
+
+    <div class="resumo-local">
+
+      <b>
+        Total neste aparelho:
+      </b>
+      ${registros.length}
+
+      <br>
+
+      <b>
+        Pendentes:
+      </b>
+      ${pendentes}
+
+      <br>
+
+      <b>
+        Sincronizadas:
+      </b>
+      ${sincronizadas}
+
+    </div>
+
+  `;
+
+
+  const lista =
+    document.getElementById(
+      'listaInspecoes'
+    );
+
+
+  if (
+    registros.length === 0
+  ) {
+
+    lista.innerHTML = `
+
+      <div class="sem-inspecoes">
+
+        Nenhuma inspeção registrada
+        neste aparelho.
+
+      </div>
+
+    `;
+
+    return;
+
+  }
+
+
+  lista.innerHTML =
+    registros
+      .map(
+        function(item) {
+
+          const momento =
+            item.timestampInspecao
+              ? new Date(
+                  item.timestampInspecao
+                )
+              : null;
+
+
+          const data =
+            momento
+              ? momento.toLocaleDateString(
+                  'pt-BR'
+                )
+              : '-';
+
+
+          const hora =
+            momento
+              ? momento.toLocaleTimeString(
+                  'pt-BR',
+                  {
+                    hour:
+                      '2-digit',
+
+                    minute:
+                      '2-digit'
+                  }
+                )
+              : '-';
+
+
+          const sincronizada =
+            item.statusSync ===
+            'SINCRONIZADA';
+
+
+          const badge =
+            sincronizada
+
+              ? `
+                <span
+                  class="status-sync sync-ok">
+
+                  ✅ SINCRONIZADA
+
+                </span>
+              `
+
+              : `
+                <span
+                  class="status-sync sync-pendente">
+
+                  ⏳ PENDENTE
+
+                </span>
+              `;
+
+
+          let simboloResultado =
+            '🟢';
+
+
+          if (
+            item.resultado ===
+            'APROVADO COM PENDÊNCIA'
+          ) {
+
+            simboloResultado =
+              '🟡';
+
+          }
+
+
+          if (
+            item.resultado ===
+            'NÃO LIBERADO'
+          ) {
+
+            simboloResultado =
+              '🔴';
+
+          }
+
+
+          return `
+
+            <div class="inspecao-local">
+
+              <div
+                class="inspecao-local-topo">
+
+                <div
+                  class="inspecao-id">
+
+                  ${escaparHtml(
+                    item.id
+                  )}
+
+                </div>
+
+                ${badge}
+
+              </div>
+
+
+              <div class="linha">
+
+                <b>Placa</b>
+
+                <span>
+                  ${escaparHtml(
+                    item.placa
+                  )}
+                </span>
+
+              </div>
+
+
+              <div class="linha">
+
+                <b>Motorista</b>
+
+                <span>
+                  ${escaparHtml(
+                    item.nome
+                  )}
+                </span>
+
+              </div>
+
+
+              <div class="linha">
+
+                <b>Data</b>
+
+                <span>
+                  ${data} ${hora}
+                </span>
+
+              </div>
+
+
+              <div class="linha">
+
+                <b>Resultado</b>
+
+                <span
+                  class="resultado-local">
+
+                  ${simboloResultado}
+                  ${escaparHtml(
+                    item.resultado
+                  )}
+
+                </span>
+
+              </div>
+
+
+              <div class="linha">
+
+                <b>NC</b>
+
+                <span>
+                  ${item.quantidadeNC}
+                </span>
+
+              </div>
+
+
+              <div class="linha">
+
+                <b>Impeditivos</b>
+
+                <span>
+                  ${item.quantidadeImpedimentos}
+                </span>
+
+              </div>
+
+            </div>
+
+          `;
+
+        }
+      )
+      .join('');
+
+}
 async function atualizarContadorFila() {
 
   try {
