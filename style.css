@@ -377,3 +377,9 @@ button.botao-fechar {
   padding: 30px 10px;
   color: #666;
 }
+.subtitulo-principal {
+  text-align: center;
+  font-size: 20px;
+  margin-top: 20px;
+  margin-bottom: 0;
+}
