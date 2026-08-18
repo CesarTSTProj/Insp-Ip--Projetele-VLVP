@@ -1,16 +1,26 @@
 const CACHE_NAME =
-  'insp-ipe-proj-v6';
+  'insp-ipe-proj-v8';
 
 
 const ARQUIVOS = [
 
   './',
 
+  './?tipo=leve',
+
+  './?tipo=pesado',
+
   './index.html',
 
   './style.css',
 
-  './app.js'
+  './app.js',
+
+  './manifest.json',
+
+  './icon-192.png',
+
+  './icon-512.png'
 
 ];
 
