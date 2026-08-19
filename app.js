@@ -527,53 +527,33 @@ async function atualizarContadorFila() {
 
   try {
 
-    const db = await abrirBanco();
-
-    const quantidade = await new Promise(function(resolve, reject) {
-
-      const transacao = db.transaction(
-        STORE_NAME,
-        'readonly'
-      );
-
-      const store = transacao.objectStore(
-        STORE_NAME
-      );
-
-      const indice = store.index(
-        'statusSync'
-      );
-
-      const requisicao = indice.count(
-        'PENDENTE'
-      );
-
-      requisicao.onsuccess = function() {
-        resolve(requisicao.result);
-      };
-
-      requisicao.onerror = function(event) {
-        reject(event.target.error);
-      };
-
-    });
+    const quantidade =
+      await contarInspecoesPendentes();
 
 
     const elemento =
-      document.getElementById('filaStatus');
+      document.getElementById(
+        'filaStatus'
+      );
 
 
     if (!elemento) {
+
       return;
+
     }
 
 
-    if (quantidade === 0) {
+    if (
+      quantidade === 0
+    ) {
 
       elemento.innerText =
         '0 inspeções aguardando sincronização';
 
-    } else if (quantidade === 1) {
+    } else if (
+      quantidade === 1
+    ) {
 
       elemento.innerText =
         '1 inspeção aguardando sincronização';
@@ -586,6 +566,7 @@ async function atualizarContadorFila() {
 
     }
 
+
   } catch (erro) {
 
     console.error(
@@ -596,7 +577,6 @@ async function atualizarContadorFila() {
   }
 
 }
-
 /*
 =================================================
 STATUS ONLINE / OFFLINE
