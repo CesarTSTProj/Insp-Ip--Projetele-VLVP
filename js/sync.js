@@ -62,3 +62,44 @@ function blobParaBase64(blob) {
   );
 
 }
+
+async function prepararPayload(
+  dados
+) {
+
+  const payload = {
+    ...dados
+  };
+
+
+  if (
+    dados.foto &&
+    dados.foto.blob
+  ) {
+
+    payload.foto = {
+
+      nome:
+        dados.foto.nome,
+
+      tipo:
+        dados.foto.tipo,
+
+      base64:
+        await blobParaBase64(
+          dados.foto.blob
+        )
+
+    };
+
+  } else {
+
+    payload.foto =
+      null;
+
+  }
+
+
+  return payload;
+
+}
