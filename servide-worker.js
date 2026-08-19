@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'insp-ipe-proj-v9';
+  'insp-ipe-proj-v10';
 
 
 const ARQUIVOS = [
@@ -17,6 +17,8 @@ const ARQUIVOS = [
   './app.js',
 
   './js/checklists.js',
+  
+  './js/database.js',
 
   './manifest.json',
 
