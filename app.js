@@ -3,10 +3,6 @@
 CONFIGURAÇÕES DO SISTEMA
 =================================================
 */
-
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxulJAYuJ_CzJMU6BAsiQPkzcSuUJVJ3fr4UupFjPeNjGytzI7sqwW2ZhlbvGqoLLr-/exec';
-let idComprovanteAtual = null;
-
 /*
 =================================================
 ALTERAR TÍTULO DA TELA
