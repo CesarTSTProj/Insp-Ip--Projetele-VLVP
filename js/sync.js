@@ -17,3 +17,48 @@ Responsabilidades:
 
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxulJAYuJ_CzJMU6BAsiQPkzcSuUJVJ3fr4UupFjPeNjGytzI7sqwW2ZhlbvGqoLLr-/exec';
 let idComprovanteAtual = null;
+
+function blobParaBase64(blob) {
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const reader =
+        new FileReader();
+
+
+      reader.onload =
+        function() {
+
+          const resultado =
+            reader.result;
+
+
+          const base64 =
+            resultado
+              .split(',')[1];
+
+
+          resolve(base64);
+
+        };
+
+
+      reader.onerror =
+        function() {
+
+          reject(
+            reader.error
+          );
+
+        };
+
+
+      reader.readAsDataURL(
+        blob
+      );
+
+    }
+  );
+
+}
