@@ -1423,40 +1423,7 @@ function mostrarComprovante(
 SINCRONIZAÇÃO
 
 
-function origemGoogleValida(
-  origem
-) {
 
-  try {
-
-    const url =
-      new URL(origem);
-
-
-    return (
-
-      url.protocol === 'https:' &&
-
-      (
-        url.hostname ===
-          'script.google.com'
-
-        ||
-
-        url.hostname.endsWith(
-          '.googleusercontent.com'
-        )
-      )
-
-    );
-
-  } catch (erro) {
-
-    return false;
-
-  }
-
-}
 
 
 async function enviarParaServidor(
