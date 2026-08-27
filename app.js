@@ -1,5 +1,246 @@
 /*
 =================================================
+INSTALAÇÃO DA PWA - INSP
+=================================================
+*/
+
+let eventoInstalacaoPWA = null;
+
+
+/*
+Verifica se o sistema já está
+executando como aplicativo instalado.
+*/
+
+function INSPJaInstalado() {
+
+  return (
+    window.matchMedia(
+      '(display-mode: standalone)'
+    ).matches ||
+    window.navigator.standalone === true
+  );
+
+}
+
+
+/*
+Verifica se o aparelho é iPhone/iPad.
+*/
+
+function dispositivoIOS() {
+
+  return /iphone|ipad|ipod/i.test(
+    navigator.userAgent
+  );
+
+}
+
+
+/*
+Mostra o botão quando necessário.
+*/
+
+function atualizarBotaoInstalacao() {
+
+  const botao =
+    document.getElementById(
+      'botaoInstalar'
+    );
+
+
+  if (!botao) {
+    return;
+  }
+
+
+  /*
+  Se já estiver instalado,
+  não mostra o botão.
+  */
+
+  if (INSPJaInstalado()) {
+
+    botao.style.display =
+      'none';
+
+    return;
+
+  }
+
+
+  /*
+  No iPhone mostraremos o botão
+  para ensinar a instalação manual.
+  */
+
+  if (dispositivoIOS()) {
+
+    botao.style.display =
+      'block';
+
+    return;
+
+  }
+
+
+  /*
+  Android/Chrome:
+  só mostra quando o navegador
+  disponibilizar a instalação.
+  */
+
+  if (eventoInstalacaoPWA) {
+
+    botao.style.display =
+      'block';
+
+  } else {
+
+    botao.style.display =
+      'none';
+
+  }
+
+}
+
+
+/*
+Chrome/Android informa que
+a aplicação pode ser instalada.
+*/
+
+window.addEventListener(
+  'beforeinstallprompt',
+  function(event) {
+
+    event.preventDefault();
+
+
+    eventoInstalacaoPWA =
+      event;
+
+
+    atualizarBotaoInstalacao();
+
+  }
+);
+
+
+/*
+Ação do botão.
+*/
+
+async function instalarINSP() {
+
+  /*
+  Se já estiver instalado.
+  */
+
+  if (INSPJaInstalado()) {
+
+    alert(
+      'O INSP já está instalado neste aparelho.'
+    );
+
+    return;
+
+  }
+
+
+  /*
+  iPhone / iPad
+  */
+
+  if (dispositivoIOS()) {
+
+    alert(
+      'Para instalar o INSP no iPhone:\n\n' +
+      '1. Abra esta página pelo Safari.\n' +
+      '2. Toque no botão Compartilhar.\n' +
+      '3. Escolha "Adicionar à Tela de Início".\n' +
+      '4. Toque em "Adicionar".'
+    );
+
+    return;
+
+  }
+
+
+  /*
+  Android / navegadores compatíveis
+  */
+
+  if (!eventoInstalacaoPWA) {
+
+    alert(
+      'A instalação automática ainda não está disponível. ' +
+      'No Chrome, abra o menu ⋮ e procure por "Instalar aplicativo" ' +
+      'ou "Adicionar à tela inicial".'
+    );
+
+    return;
+
+  }
+
+
+  eventoInstalacaoPWA.prompt();
+
+
+  const escolha =
+    await eventoInstalacaoPWA.userChoice;
+
+
+  if (
+    escolha.outcome ===
+    'accepted'
+  ) {
+
+    console.log(
+      'Instalação do INSP aceita.'
+    );
+
+  } else {
+
+    console.log(
+      'Instalação do INSP cancelada.'
+    );
+
+  }
+
+
+  eventoInstalacaoPWA =
+    null;
+
+
+  atualizarBotaoInstalacao();
+
+}
+
+
+/*
+Navegador confirma instalação.
+*/
+
+window.addEventListener(
+  'appinstalled',
+  function() {
+
+    eventoInstalacaoPWA =
+      null;
+
+
+    atualizarBotaoInstalacao();
+
+
+    console.log(
+      'INSP instalado com sucesso.'
+    );
+
+  }
+);
+/*
+=================================================
 CONFIGURAÇÕES DO SISTEMA
 =================================================
 */
