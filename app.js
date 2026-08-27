@@ -1040,6 +1040,10 @@ versaoChecklist:
     await salvarInspecaoLocal(
       dados
     );
+    if (navigator.onLine) {
+
+  tentarSincronizacaoAutomatica();
+    );
 
 
     await atualizarContadorFila();
