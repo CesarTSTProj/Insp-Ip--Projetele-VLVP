@@ -1056,7 +1056,12 @@ versaoChecklist:
     mostrarComprovante(
       dados
     );
+      
+      if (navigator.onLine) {
 
+  tentarSincronizacaoAutomatica();
+
+    }
 
     /*
     SE ESTIVER ONLINE,
