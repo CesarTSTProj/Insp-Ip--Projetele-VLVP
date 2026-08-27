@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'insp-ipe-proj-v11';
+  'insp-ipe-proj-v12';
 
 
 const ARQUIVOS = [
