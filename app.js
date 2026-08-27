@@ -1765,9 +1765,11 @@ if (
             console.error(
               'Erro no Service Worker:',
               erro
+            atualizarBotaoInstalacao();
             );
 
           }
+          
         );
 
     }
