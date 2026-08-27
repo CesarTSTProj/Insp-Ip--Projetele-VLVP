@@ -274,6 +274,7 @@ button:disabled {
 
 .status-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 14px;
 }
@@ -382,4 +383,13 @@ button.botao-fechar {
   font-size: 20px;
   margin-top: 20px;
   margin-bottom: 0;
+}
+/* =========================================
+   INSTALAÇÃO DO APLICATIVO
+========================================= */
+
+button.botao-instalar {
+  width: 100%;
+  flex-basis: 100%;
+  background: #1769aa;
 }
