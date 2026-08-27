@@ -580,3 +580,189 @@ async function sincronizarAgora() {
   }
 
 }
+/*
+=================================================
+SINCRONIZAÇÃO AUTOMÁTICA
+=================================================
+*/
+
+let timerSincronizacaoAutomatica = null;
+
+
+/*
+Tenta sincronizar sem incomodar
+o usuário com alertas.
+*/
+
+async function tentarSincronizacaoAutomatica() {
+
+  if (!navigator.onLine) {
+    return;
+  }
+
+  if (sincronizacaoEmAndamento) {
+    return;
+  }
+
+  try {
+
+    const pendentes =
+      await obterInspecoesPendentes();
+
+
+    if (
+      pendentes.length === 0
+    ) {
+
+      await atualizarContadorFila();
+
+      return;
+
+    }
+
+
+    console.log(
+      'Sincronização automática: ' +
+      pendentes.length +
+      ' inspeção(ões) pendente(s).'
+    );
+
+
+    await sincronizar();
+
+
+  } catch (erro) {
+
+    console.error(
+      'Falha na sincronização automática:',
+      erro
+    );
+
+  }
+
+}
+
+
+/*
+=================================================
+INICIAR ROTINA AUTOMÁTICA
+=================================================
+*/
+
+function iniciarSincronizacaoAutomatica() {
+
+  /*
+  1. Ao abrir o sistema
+  */
+
+  setTimeout(
+    tentarSincronizacaoAutomatica,
+    2000
+  );
+
+
+  /*
+  2. Internet voltou
+  */
+
+  window.addEventListener(
+    'online',
+    function() {
+
+      console.log(
+        'Conexão recuperada.'
+      );
+
+      tentarSincronizacaoAutomatica();
+
+    }
+  );
+
+
+  /*
+  3. Usuário voltou para o aplicativo
+  */
+
+  document.addEventListener(
+    'visibilitychange',
+    function() {
+
+      if (
+        document.visibilityState ===
+        'visible'
+      ) {
+
+        tentarSincronizacaoAutomatica();
+
+      }
+
+    }
+  );
+
+
+  /*
+  4. Janela recebeu foco novamente
+  */
+
+  window.addEventListener(
+    'focus',
+    function() {
+
+      tentarSincronizacaoAutomatica();
+
+    }
+  );
+
+
+  /*
+  5. Página retomada pelo navegador
+  */
+
+  window.addEventListener(
+    'pageshow',
+    function() {
+
+      tentarSincronizacaoAutomatica();
+
+    }
+  );
+
+
+  /*
+  6. Enquanto o aplicativo estiver aberto,
+  verifica periodicamente.
+  */
+
+  if (
+    timerSincronizacaoAutomatica
+  ) {
+
+    clearInterval(
+      timerSincronizacaoAutomatica
+    );
+
+  }
+
+
+  timerSincronizacaoAutomatica =
+    setInterval(
+
+      function() {
+
+        if (
+          navigator.onLine &&
+          document.visibilityState ===
+          'visible'
+        ) {
+
+          tentarSincronizacaoAutomatica();
+
+        }
+
+      },
+
+      30000
+
+    );
+
+}
