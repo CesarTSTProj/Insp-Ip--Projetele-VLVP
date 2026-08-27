@@ -1473,6 +1473,8 @@ async function iniciarSistema() {
     atualizarStatus();
 
     await atualizarContadorFila();
+    
+    iniciarSincronizacaoAutomatica();
 
   } catch (erro) {
 
