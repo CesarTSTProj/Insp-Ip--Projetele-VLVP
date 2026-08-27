@@ -1,5 +1,5 @@
 const CACHE_NAME =
-  'PLATAFORMA-DE-INSPEÇÃO-VEÍCULAR-v13';
+  'insp-ipe-proj-v13';
 
 
 const ARQUIVOS = [
